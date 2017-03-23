@@ -1,4 +1,4 @@
-package teamcity
+package main
 
 import (
 	//"encoding/json"
@@ -12,6 +12,7 @@ import (
 	"github.com/mitchellh/packer/common"
 	"github.com/mitchellh/packer/helper/config"
 	"github.com/mitchellh/packer/packer"
+	"github.com/mitchellh/packer/packer/plugin"
 	"github.com/mitchellh/packer/template/interpolate"
 )
 
@@ -137,4 +138,8 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, source packer.Artifact) (packe
 	fmt.Printf("ArtifactId : %v\n", source.Id())
 
 	return source, true, nil
+}
+
+func main() {
+	plugin.ServePostProcessor(new(PostProcessor))
 }
