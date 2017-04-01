@@ -57,5 +57,10 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, source packer.Artifact) (packe
 }
 
 func main() {
-	plugin.ServePostProcessor(new(PostProcessor))
+	server, err := plugin.Server()
+	if err != nil {
+		panic(err)
+	}
+	server.RegisterPostProcessor(new(PostProcessor))
+	server.Serve()
 }
