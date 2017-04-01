@@ -1,0 +1,13 @@
+{
+    "builders": [
+        {
+            "type": "file",
+            "content": "Lorem ipsum dolor sit amet",
+            "target": "dummy_artifact"
+        }
+    ],
+
+    "post-processors": [
+        "teamcity" 
+    ]
+}

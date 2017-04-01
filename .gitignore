@@ -1,2 +1,6 @@
-./bento_copy/*
+bento_copy/*
+packer-templates/*
+packer_cache/*
+output-virtualbox/*
+*~
 
