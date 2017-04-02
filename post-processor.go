@@ -52,7 +52,7 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 }
 
 func (p *PostProcessor) PostProcess(ui packer.Ui, source packer.Artifact) (packer.Artifact, bool, error) {
-	ui.Message(fmt.Sprintf("ArtifactId : %v\n", source.Id()))
+	ui.Message(fmt.Sprintf("ArtifactId : %v", source.Id()))
 	return source, true, nil
 }
 
