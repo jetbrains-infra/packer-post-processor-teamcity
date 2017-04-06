@@ -6,10 +6,13 @@ import (
 	"github.com/mitchellh/packer/common"
 	"github.com/mitchellh/packer/helper/config"
 	"github.com/mitchellh/packer/packer"
-	// The library I cannot properly install
 	"github.com/mitchellh/packer/packer/plugin"
 	"github.com/mitchellh/packer/template/interpolate"
+	"os"
+	"strings"
 )
+
+const TeamcityVersionEnvVar = "TEAMCITY_VERSION"
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
@@ -52,7 +55,16 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 }
 
 func (p *PostProcessor) PostProcess(ui packer.Ui, source packer.Artifact) (packer.Artifact, bool, error) {
-	ui.Message(fmt.Sprintf("ArtifactId : %v", source.Id()))
+	if os.Getenv(TeamcityVersionEnvVar) != "" {
+		if source.BuilderId() == "aws" {
+			s := strings.Split(source.Id(), ":")
+			region, ami := s[0], s[1] // TODO: several AMIs
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.aws.region' value='%v']", region))
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.aws.ami' value='%v']", ami))
+		} else {
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.id' value='%v']", source.Id()))
+		}
+	}
 	return source, true, nil
 }
 
