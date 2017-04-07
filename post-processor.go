@@ -3,16 +3,22 @@ package main
 import (
 	"fmt"
 
-	"github.com/mitchellh/packer/common"
-	"github.com/mitchellh/packer/helper/config"
-	"github.com/mitchellh/packer/packer"
-	"github.com/mitchellh/packer/packer/plugin"
-	"github.com/mitchellh/packer/template/interpolate"
+	"github.com/hashicorp/packer/common"
+	"github.com/hashicorp/packer/helper/config"
+	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer/packer/plugin"
+	"github.com/hashicorp/packer/template/interpolate"
 	"os"
 	"strings"
 )
 
 const TeamcityVersionEnvVar = "TEAMCITY_VERSION"
+var AmazonBuilderIds = []string {
+	"mitchellh.amazonebs",
+	"mitchellh.amazon.ebssurrogate",
+	"mitchellh.amazon.instance",
+	"mitchellh.amazon.chroot",
+}
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
@@ -29,6 +35,15 @@ type PostProcessor struct {
 type ManifestFile struct {
 	Builds      []Artifact `json:"builds"`
 	LastRunUUID string     `json:"last_run_uuid"`
+}
+
+func Contains(vs []string, t string) bool {
+	for _, v := range vs {
+		if v == t {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *PostProcessor) Configure(raws ...interface{}) error {
@@ -56,7 +71,7 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 
 func (p *PostProcessor) PostProcess(ui packer.Ui, source packer.Artifact) (packer.Artifact, bool, error) {
 	if os.Getenv(TeamcityVersionEnvVar) != "" {
-		if source.BuilderId() == "aws" {
+		if Contains(AmazonBuilderIds, source.BuilderId())  {
 			s := strings.Split(source.Id(), ":")
 			region, ami := s[0], s[1] // TODO: several AMIs
 			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.aws.region' value='%v']", region))
