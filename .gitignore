@@ -1,6 +1,4 @@
-bento_copy/*
-packer-templates/*
-packer_cache/*
-output-virtualbox/*
-*~
-
+.idea/
+vendor/
+.glide/
+packer_cache/
