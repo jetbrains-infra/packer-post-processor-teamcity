@@ -2,7 +2,7 @@ package main
 
 import "fmt"
 
-const BuilderId = "packer.post-processor.teamcity"
+const BuilderId = "jetbrains.post-processor.teamcity"
 
 type ArtifactFile struct {
 	Name string `json:"name"`
