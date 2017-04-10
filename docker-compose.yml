@@ -1,0 +1,6 @@
+build:
+  build: docker/
+  volumes:
+    - .:/go/src/github.com/JetBrains/packer-post-processor-teamcity/
+  working_dir: /go/src/github.com/JetBrains/packer-post-processor-teamcity/
+  command: ./build.sh

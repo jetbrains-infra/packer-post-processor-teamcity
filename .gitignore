@@ -1,4 +1,5 @@
 .idea/
 vendor/
 .glide/
+bin/
 packer_cache/
