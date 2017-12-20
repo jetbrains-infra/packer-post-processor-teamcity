@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/packer/plugin"
+	"github.com/hashicorp/packer/common"
+	"github.com/hashicorp/packer/helper/config"
 	"os"
 	"strings"
 	"fmt"
@@ -26,9 +28,15 @@ func main() {
 }
 
 type PostProcessor struct {
+	config common.PackerConfig
 }
 
 func (p *PostProcessor) Configure(raws ...interface{}) error {
+	err := config.Decode(&p.config, nil, raws...)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -37,10 +45,10 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		if contains(AmazonBuilderIds, artifact.BuilderId())  {
 			s := strings.Split(artifact.Id(), ":")
 			region, ami := s[0], s[1] // TODO: several AMIs
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.aws.region' value='%v']", region))
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.aws.ami' value='%v']", ami))
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
 		} else {
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.id' value='%v']", artifact.Id()))
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, artifact.Id()))
 		}
 	}
 	return artifact, true, nil
