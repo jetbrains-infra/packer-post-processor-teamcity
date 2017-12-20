@@ -3,3 +3,6 @@ vendor/
 .glide/
 bin/
 packer_cache/
+packer-post-processor-teamcity*
+test*.json
+test-artifact.txt
