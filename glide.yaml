@@ -1,4 +1,4 @@
 package: github.com/JetBrains/packer-post-processor-teamcity
 import:
 - package: github.com/hashicorp/packer
-#  version: v1.0.0
+  version: v1.1.3
