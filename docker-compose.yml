@@ -1,5 +1,5 @@
 build:
-  build: docker/
+  image: jetbrainsinfra/golang:1.10.3
   volumes:
     - .:/go/src/github.com/JetBrains/packer-post-processor-teamcity/
   working_dir: /go/src/github.com/JetBrains/packer-post-processor-teamcity/
