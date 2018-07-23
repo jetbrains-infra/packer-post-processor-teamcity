@@ -40,7 +40,7 @@ type Config struct {
 	Username    string `mapstructure:"username"`
 	Password    string `mapstructure:"password"`
 	ProjectId   string `mapstructure:"project_id"`
-	CustomImageName string `mapstructure:"custom_image_name"`
+	CloudImage  string `mapstructure:"cloud_image"`
 }
 
 func (p *PostProcessor) Configure(raws ...interface{}) error {
@@ -60,8 +60,8 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		if p.config.ProjectId == "" {
 			errs = packer.MultiErrorAppend(errs, fmt.Errorf("project_id is required"))
 		}
-		if p.config.CustomImageName == "" {
-			errs = packer.MultiErrorAppend(errs, fmt.Errorf("custom_image_name is required"))
+		if p.config.CloudImage == "" {
+			errs = packer.MultiErrorAppend(errs, fmt.Errorf("cloud_image is required"))
 		}
 	}
 
@@ -86,12 +86,23 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	}
 
 	if p.config.TeamCityUrl != "" {
-		url := fmt.Sprintf(
+		var url string
+		if contains(AmazonBuilderIds, artifact.BuilderId()) {
+			url = fmt.Sprintf(
+				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/source-id",
+				strings.TrimRight(p.config.TeamCityUrl, "/"),
+				p.config.ProjectId,
+				p.config.CloudImage,
+			)
+		} else {
+			url = fmt.Sprintf(
 				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
 				strings.TrimRight(p.config.TeamCityUrl, "/"),
 				p.config.ProjectId,
-			p.config.CustomImageName,
+				p.config.CloudImage,
 			)
+		}
+
 		body := bytes.NewBufferString(image)
 
 		c := &http.Client{}
@@ -112,7 +123,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 			return artifact, true, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
 		}
 
-		ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CustomImageName, image))
+		ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CloudImage, image))
 	}
 
 	return artifact, true, nil
