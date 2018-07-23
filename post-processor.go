@@ -41,7 +41,6 @@ type Config struct {
 	Password    string `mapstructure:"password"`
 	ProjectId   string `mapstructure:"project_id"`
 	CustomImageName string `mapstructure:"custom_image_name"`
-	AgentName       string `mapstructure:"agent_name"`
 }
 
 func (p *PostProcessor) Configure(raws ...interface{}) error {
@@ -63,9 +62,6 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		}
 		if p.config.CustomImageName == "" {
 			errs = packer.MultiErrorAppend(errs, fmt.Errorf("custom_image_name is required"))
-		}
-		if p.config.AgentName == "" {
-			errs = packer.MultiErrorAppend(errs, fmt.Errorf("agent_name is required"))
 		}
 	}
 
@@ -96,7 +92,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 				p.config.ProjectId,
 			p.config.CustomImageName,
 			)
-		body := bytes.NewBufferString(p.config.AgentName)
+		body := bytes.NewBufferString(image)
 
 		c := &http.Client{}
 		req, err := http.NewRequest("PUT", url, body)
@@ -116,7 +112,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 			return artifact, true, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
 		}
 
-		ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CustomImageName, p.config.AgentName))
+		ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CustomImageName, image))
 	}
 
 	return artifact, true, nil
