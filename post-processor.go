@@ -13,8 +13,6 @@ import (
 	"errors"
 )
 
-const TeamcityVersionEnvVar = "TEAMCITY_VERSION"
-
 var AmazonBuilderIds = []string{
 	"mitchellh.amazonebs",
 	"mitchellh.amazon.ebssurrogate",
@@ -38,10 +36,10 @@ type PostProcessor struct {
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 
-	TeamCityUrl     string `mapstructure:"teamcity_url"`
-	Username        string `mapstructure:"username"`
-	Password        string `mapstructure:"password"`
-	ProjectId       string `mapstructure:"project_id"`
+	TeamCityUrl string `mapstructure:"teamcity_url"`
+	Username    string `mapstructure:"username"`
+	Password    string `mapstructure:"password"`
+	ProjectId   string `mapstructure:"project_id"`
 	CustomImageName string `mapstructure:"custom_image_name"`
 	AgentName       string `mapstructure:"agent_name"`
 }
@@ -79,24 +77,25 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 }
 
 func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, error) {
-	if os.Getenv(TeamcityVersionEnvVar) != "" {
-		if contains(AmazonBuilderIds, artifact.BuilderId()) {
-			s := strings.Split(artifact.Id(), ":")
-			region, ami := s[0], s[1]
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
-		} else {
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, artifact.Id()))
-		}
+	var image string
+	if contains(AmazonBuilderIds, artifact.BuilderId()) {
+		s := strings.Split(artifact.Id(), ":")
+		image = s[1]
+	} else {
+		image = artifact.Id()
+	}
+
+	if os.Getenv("TEAMCITY_VERSION") != "" {
+		ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, image))
 	}
 
 	if p.config.TeamCityUrl != "" {
 		url := fmt.Sprintf(
-			"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
-			strings.TrimRight(p.config.TeamCityUrl, "/"),
-			p.config.ProjectId,
+				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
+				strings.TrimRight(p.config.TeamCityUrl, "/"),
+				p.config.ProjectId,
 			p.config.CustomImageName,
-		)
+			)
 		body := bytes.NewBufferString(p.config.AgentName)
 
 		c := &http.Client{}
