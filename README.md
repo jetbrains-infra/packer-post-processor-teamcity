@@ -59,5 +59,6 @@ Optionally the plugin can be used to deploy new versions of TeamCity cloud agent
     }
   ]
 }
-
 ```
+
+When building Amazon AMIs the `agent_name` refers to the `Agent name prefix` configured in the agent profile source.
