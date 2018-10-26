@@ -39,6 +39,9 @@ Now dependent build configurations can reference these parameters and resolve th
 
 Optionally the plugin can be used to deploy new versions of TeamCity cloud agents: after the images are created Packer registrs them in cloud agent profiles on TeamCity server:
 
+| This feature works with vSphere only. See #3 |
+| --- |
+
 ```json
 {
   "builders": [
