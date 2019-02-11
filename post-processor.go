@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/hashicorp/packer/packer"
-	"github.com/hashicorp/packer/packer/plugin"
-	"github.com/hashicorp/packer/common"
-	"github.com/hashicorp/packer/helper/config"
-	"os"
-	"strings"
-	"fmt"
-	"net/http"
 	"bytes"
 	"errors"
+	"fmt"
+	"github.com/hashicorp/packer/common"
+	"github.com/hashicorp/packer/helper/config"
+	"github.com/hashicorp/packer/packer"
+	"github.com/hashicorp/packer/packer/plugin"
+	"net/http"
+	"os"
+	"strings"
 )
 
 var AmazonBuilderIds = []string{
@@ -89,7 +89,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		var url string
 		if contains(AmazonBuilderIds, artifact.BuilderId()) {
 			url = fmt.Sprintf(
-				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/source-id",
+				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/amazon-id",
 				strings.TrimRight(p.config.TeamCityUrl, "/"),
 				p.config.ProjectId,
 				p.config.CloudImage,
