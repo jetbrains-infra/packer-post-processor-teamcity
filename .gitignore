@@ -1,5 +1,5 @@
 .idea/
-vendor/
+*.iml
 bin/
 packer_cache/
 packer-post-processor-teamcity*

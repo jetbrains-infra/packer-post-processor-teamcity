@@ -1,7 +1,0 @@
-[[constraint]]
-  name = "github.com/hashicorp/packer"
-  version = "~1.2"
-
-[prune]
-  go-tests = true
-  unused-packages = true
