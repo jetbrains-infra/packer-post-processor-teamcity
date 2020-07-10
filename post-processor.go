@@ -1,9 +1,13 @@
+//go:generate mapstructure-to-hcl2 -type Config
+
 package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"github.com/hashicorp/hcl/v2/hcldec"
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
@@ -43,6 +47,10 @@ type Config struct {
 	CloudImage  string `mapstructure:"cloud_image"`
 }
 
+func (p *PostProcessor) ConfigSpec() hcldec.ObjectSpec {
+	return p.config.FlatMapstructure().HCL2Spec()
+}
+
 func (p *PostProcessor) Configure(raws ...interface{}) error {
 	err := config.Decode(&p.config, nil, raws...)
 	if err != nil {
@@ -72,7 +80,7 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 	return nil
 }
 
-func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (packer.Artifact, bool, error) {
+func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (a packer.Artifact, keep bool, forceOverride bool, err error) {
 	var image string
 	if contains(AmazonBuilderIds, artifact.BuilderId()) {
 		s := strings.Split(artifact.Id(), ":")
@@ -108,25 +116,25 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		c := &http.Client{}
 		req, err := http.NewRequest("PUT", url, body)
 		if err != nil {
-			return artifact, true, err
+			return artifact, true, false, err
 		}
 		req.Header.Add("Content-Type", "text/plain")
 		req.SetBasicAuth(p.config.Username, p.config.Password)
 
 		resp, err := c.Do(req)
 		if err != nil {
-			return artifact, true, err
+			return artifact, true, false, err
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != 200 {
-			return artifact, true, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
+			return artifact, true, false, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
 		}
 
 		ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CloudImage, image))
 	}
 
-	return artifact, true, nil
+	return artifact, true, false, nil
 }
 
 func contains(slice []string, value string) bool {
