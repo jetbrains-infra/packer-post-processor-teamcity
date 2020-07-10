@@ -81,8 +81,9 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 }
 
 func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (a packer.Artifact, keep bool, forceOverride bool, err error) {
+	isAmazonArtifact := contains(AmazonBuilderIds, artifact.BuilderId())
 	var image string
-	if contains(AmazonBuilderIds, artifact.BuilderId()) {
+	if isAmazonArtifact {
 		s := strings.Split(artifact.Id(), ":")
 		image = s[1]
 	} else {
@@ -91,11 +92,20 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 
 	if os.Getenv("TEAMCITY_VERSION") != "" {
 		ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, image))
+
+		if isAmazonArtifact {
+			s := strings.Split(artifact.Id(), ":")
+			region, ami := s[0], s[1]
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
+		} else {
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.last.id' value='%v']", image))
+		}
 	}
 
 	if p.config.TeamCityUrl != "" {
 		var url string
-		if contains(AmazonBuilderIds, artifact.BuilderId()) {
+		if isAmazonArtifact {
 			url = fmt.Sprintf(
 				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/amazon-id",
 				strings.TrimRight(p.config.TeamCityUrl, "/"),
