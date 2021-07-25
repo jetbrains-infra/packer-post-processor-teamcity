@@ -43,6 +43,7 @@ type Config struct {
 	TeamCityUrl string `mapstructure:"teamcity_url"`
 	Username    string `mapstructure:"username"`
 	Password    string `mapstructure:"password"`
+	Token       string `mapstructure:"token"`
 	ProjectId   string `mapstructure:"project_id"`
 	CloudImage  string `mapstructure:"cloud_image"`
 }
@@ -59,11 +60,17 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 
 	errs := new(packer.MultiError)
 	if p.config.TeamCityUrl != "" {
-		if p.config.Username == "" {
-			errs = packer.MultiErrorAppend(errs, fmt.Errorf("username is required"))
-		}
-		if p.config.Password == "" {
-			errs = packer.MultiErrorAppend(errs, fmt.Errorf("password is required"))
+		if p.config.Token == "" {
+			if p.config.Username == "" || p.config.Password == "" {
+				errs = packer.MultiErrorAppend(errs, fmt.Errorf("(`username` and `password`) or `token` is required"))
+			}
+		} else {
+			if p.config.Username != "" {
+				errs = packer.MultiErrorAppend(errs, fmt.Errorf("`username` conflicts with `token`"))
+			}
+			if p.config.Password != "" {
+				errs = packer.MultiErrorAppend(errs, fmt.Errorf("`password` conflicts with `token`"))
+			}
 		}
 		if p.config.ProjectId == "" {
 			errs = packer.MultiErrorAppend(errs, fmt.Errorf("project_id is required"))
@@ -129,7 +136,11 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 			return artifact, true, false, err
 		}
 		req.Header.Add("Content-Type", "text/plain")
-		req.SetBasicAuth(p.config.Username, p.config.Password)
+		if p.config.Token != "" {
+			req.Header.Set("Authorization", "Bearer "+p.config.Token)
+		} else {
+			req.SetBasicAuth(p.config.Username, p.config.Password)
+		}
 
 		resp, err := c.Do(req)
 		if err != nil {
