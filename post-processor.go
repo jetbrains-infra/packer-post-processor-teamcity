@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/packer/plugin"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -29,7 +30,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server.RegisterPostProcessor(new(PostProcessor))
+	_ = server.RegisterPostProcessor(new(PostProcessor))
 	server.Serve()
 }
 
@@ -131,7 +132,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		body := bytes.NewBufferString(image)
 
 		c := &http.Client{}
-		req, err := http.NewRequest("PUT", url, body)
+		req, err := http.NewRequestWithContext(ctx, "PUT", url, body)
 		if err != nil {
 			return artifact, true, false, err
 		}
@@ -146,7 +147,9 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		if err != nil {
 			return artifact, true, false, err
 		}
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(resp.Body)
 
 		if resp.StatusCode != 200 {
 			return artifact, true, false, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
