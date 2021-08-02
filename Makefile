@@ -15,7 +15,7 @@ modules:
 	go mod download
 
 tools:
-	go install github.com/hashicorp/packer/cmd/mapstructure-to-hcl2
+	go install github.com/hashicorp/packer-plugin-sdk/cmd/packer-sdc@latest
 
 generate: tools
 	go generate ./...
