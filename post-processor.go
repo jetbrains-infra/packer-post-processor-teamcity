@@ -115,14 +115,14 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 		var url string
 		if isAmazonArtifact {
 			url = fmt.Sprintf(
-				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/amazon-id",
+				"%v/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/amazon-id",
 				strings.TrimRight(p.config.TeamCityUrl, "/"),
 				p.config.ProjectId,
 				p.config.CloudImage,
 			)
 		} else {
 			url = fmt.Sprintf(
-				"%v/httpAuth/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
+				"%v/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
 				strings.TrimRight(p.config.TeamCityUrl, "/"),
 				p.config.ProjectId,
 				p.config.CloudImage,
