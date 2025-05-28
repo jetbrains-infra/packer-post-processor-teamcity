@@ -110,15 +110,15 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 			if isAmazonArtifact {
 				// The example: "us-east-1:ami-0123456789"
 				s := strings.Split(image, ":")
-				region, aws := s[0], s[1]
+				region, ami := s[0], s[1]
 
 				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.%v.aws.region' value='%v']", p.config.PackerBuildName, imageIndex, region))
-				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.%v.aws.ami' value='%v']", p.config.PackerBuildName, imageIndex, aws))
+				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.%v.aws.ami' value='%v']", p.config.PackerBuildName, imageIndex, ami))
 
 				// Obsolete, but for compatibility with previous versions of the plugin.
 				if count == 1 {
 					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
-					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, aws))
+					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
 				}
 			} else {
 				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, image))
