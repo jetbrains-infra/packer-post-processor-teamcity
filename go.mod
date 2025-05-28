@@ -1,6 +1,6 @@
 module github.com/JetBrains/packer-post-processor-teamcity
 
-go 1.23.0
+go 1.18
 
 require (
 	github.com/hashicorp/hcl/v2 v2.14.1
