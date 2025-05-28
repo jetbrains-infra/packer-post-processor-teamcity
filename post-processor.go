@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/packer-plugin-sdk/packer"
 	"github.com/hashicorp/packer-plugin-sdk/plugin"
 	"github.com/hashicorp/packer-plugin-sdk/template/config"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -89,73 +88,89 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 }
 
 func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact packer.Artifact) (a packer.Artifact, keep bool, forceOverride bool, err error) {
+	isOnTeamCity := os.Getenv("TEAMCITY_VERSION") != ""
 	isAmazonArtifact := contains(AmazonBuilderIds, artifact.BuilderId())
-	var image string
+
+	var images []string
 	if isAmazonArtifact {
-		s := strings.Split(artifact.Id(), ":")
-		image = s[1]
+		// The example of "artifact_id" for multi-region value: "us-east-1:ami-0123456789,us-east-2:ami-9876543210"
+		images = strings.Split(artifact.Id(), ",")
 	} else {
-		image = artifact.Id()
+		images = []string{artifact.Id()}
 	}
 
-	if os.Getenv("TEAMCITY_VERSION") != "" {
-		ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, image))
-
+	count := len(images)
+	if isOnTeamCity {
 		if isAmazonArtifact {
-			s := strings.Split(artifact.Id(), ":")
-			region, ami := s[0], s[1]
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
-		} else {
-			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.last.id' value='%v']", image))
+			ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.count' value='%v']", p.config.PackerBuildName, count))
 		}
 	}
+	for imageIndex, image := range images {
+		if isOnTeamCity {
+			if isAmazonArtifact {
+				// The example: "us-east-1:ami-0123456789"
+				s := strings.Split(image, ":")
+				region, ami := s[0], s[1]
 
-	if p.config.TeamCityUrl != "" {
-		var url string
-		if isAmazonArtifact {
-			url = fmt.Sprintf(
-				"%v/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/amazon-id",
-				strings.TrimRight(p.config.TeamCityUrl, "/"),
-				p.config.ProjectId,
-				p.config.CloudImage,
-			)
-		} else {
-			url = fmt.Sprintf(
-				"%v/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
-				strings.TrimRight(p.config.TeamCityUrl, "/"),
-				p.config.ProjectId,
-				p.config.CloudImage,
-			)
+				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.%v.aws.region' value='%v']", p.config.PackerBuildName, imageIndex, region))
+				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.%v.aws.ami' value='%v']", p.config.PackerBuildName, imageIndex, ami))
+				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.%v.ami' value='%v']", p.config.PackerBuildName, region, ami))
+
+				// Obsolete, but for compatibility with previous versions of the plugin.
+				if imageIndex == 0 {
+					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
+					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
+				}
+			} else {
+				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.id' value='%v']", p.config.PackerBuildName, image))
+				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.last.id' value='%v']", image))
+			}
 		}
 
-		body := bytes.NewBufferString(image)
+		if p.config.TeamCityUrl != "" {
+			var url string
+			if isAmazonArtifact {
+				url = fmt.Sprintf(
+					"%v/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:image-name-prefix,value:%v)/properties/amazon-id",
+					strings.TrimRight(p.config.TeamCityUrl, "/"),
+					p.config.ProjectId,
+					p.config.CloudImage,
+				)
+			} else {
+				url = fmt.Sprintf(
+					"%v/app/rest/projects/id:%v/projectFeatures/type:CloudImage,property(name:source-id,value:%v)/properties/sourceVmName",
+					strings.TrimRight(p.config.TeamCityUrl, "/"),
+					p.config.ProjectId,
+					p.config.CloudImage,
+				)
+			}
 
-		c := &http.Client{}
-		req, err := http.NewRequestWithContext(ctx, "PUT", url, body)
-		if err != nil {
-			return artifact, true, false, err
-		}
-		req.Header.Add("Content-Type", "text/plain")
-		if p.config.Token != "" {
-			req.Header.Set("Authorization", "Bearer "+p.config.Token)
-		} else {
-			req.SetBasicAuth(p.config.Username, p.config.Password)
-		}
+			body := bytes.NewBufferString(image)
 
-		resp, err := c.Do(req)
-		if err != nil {
-			return artifact, true, false, err
-		}
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(resp.Body)
+			c := &http.Client{}
+			req, err := http.NewRequestWithContext(ctx, "PUT", url, body)
+			if err != nil {
+				return artifact, true, false, err
+			}
+			req.Header.Add("Content-Type", "text/plain")
+			if p.config.Token != "" {
+				req.Header.Set("Authorization", "Bearer "+p.config.Token)
+			} else {
+				req.SetBasicAuth(p.config.Username, p.config.Password)
+			}
 
-		if resp.StatusCode != 200 {
-			return artifact, true, false, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
-		}
+			resp, err := c.Do(req)
+			if err != nil {
+				return artifact, true, false, err
+			}
+			_ = resp.Body.Close()
 
-		ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CloudImage, image))
+			if resp.StatusCode != 200 {
+				return artifact, true, false, errors.New(fmt.Sprintf("Error updating a cloud profile: %v", resp.Status))
+			}
+
+			ui.Message(fmt.Sprintf("Cloud agent image '%v' is switched to image '%v'", p.config.CloudImage, image))
+		}
 	}
 
 	return artifact, true, false, nil
