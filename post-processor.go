@@ -117,7 +117,7 @@ func (p *PostProcessor) PostProcess(ctx context.Context, ui packer.Ui, artifact 
 				ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.%v.ami' value='%v']", p.config.PackerBuildName, region, ami))
 
 				// Obsolete, but for compatibility with previous versions of the plugin.
-				if imageIndex == 0 {
+				if region == "eu-west-1" {
 					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.region' value='%v']", p.config.PackerBuildName, region))
 					ui.Message(fmt.Sprintf("##teamcity[setParameter name='packer.artifact.%v.aws.ami' value='%v']", p.config.PackerBuildName, ami))
 				}
