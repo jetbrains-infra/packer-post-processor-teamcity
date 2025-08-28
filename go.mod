@@ -1,6 +1,6 @@
 module github.com/JetBrains/packer-post-processor-teamcity
 
-go 1.18
+go 1.23.0
 
 require (
 	github.com/hashicorp/hcl/v2 v2.14.1
@@ -50,7 +50,7 @@ require (
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/ulikunitz/xz v0.5.14 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
